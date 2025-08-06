@@ -11,11 +11,11 @@ const GoogleSignin: React.FC = () => {
     });
 
     if (error) {
-        console.error('Error logging in with Google:', error.message);
+      console.error('Error logging in with Google:', error.message);
     }
     else {
-        console.log('Login successful!');
-    }
+      console.log('Login successful!');
+    } 
   }
 
   return (

@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Voice Recruiter
+
+AI Voice Recruiter is a web application designed to streamline the initial screening process by conducting automated voice interviews with candidates. It leverages AI to generate interview questions, analyze responses, and provide feedback, saving recruiters time and effort.
+
+## Key Features
+
+*   **AI-Powered Interviews:** Conduct interviews with an AI assistant.
+*   **Dynamic Question Generation:** Generate interview questions based on job descriptions.
+*   **Voice Interaction:** Candidates can respond to questions using their voice.
+*   **Interview Scheduling:** Schedule interviews and share unique links with candidates.
+*   **Feedback and Analysis:** Get AI-generated feedback on candidate performance.
+
+## Tech Stack
+
+*   **Framework:** [Next.js](https://nextjs.org/)
+*   **Language:** [TypeScript](https://www.typescriptlang.org/)
+*   **Backend & Database:** [Supabase](https://supabase.io/)
+*   **AI & Voice:**
+    *   [Vapi AI](https://vapi.ai/): For voice-based AI agent interaction.
+    *   [OpenAI API](https://openai.com/docs/api-reference/): For generating questions and feedback.
+*   **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+*   **UI Components:** [Shadcn UI](https://ui.shadcn.com/)
+*   **State Management:** React Hooks & Context API
+*   **Deployment:** [Vercel](https://vercel.com/)
 
 ## Getting Started
 
-First, run the development server:
+To get a local copy up and running, follow these simple steps.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### Prerequisites
+
+*   Node.js (v18 or later)
+*   npm, yarn, or pnpm
+
+### Installation
+
+1.  **Clone the repo**
+    ```sh
+    git clone https://github.com/your_username/ai_voice_recruiter.git
+    ```
+2.  **Install NPM packages**
+    ```sh
+    npm install
+    ```
+3.  **Set up environment variables**
+    -   Create a `.env.local` file in the root of your project.
+    -   Add the necessary environment variables. See `.env.example` for a list of required variables.
+
+4.  **Run the development server**
+    ```sh
+    npm run dev
+    ```
+    Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Project Structure
+
+The project follows the standard Next.js App Router structure.
+
+```
+/
+├── app/
+│   ├── (auth)/           # Authentication routes (e.g., sign in, sign up)
+│   ├── (main)/           # Main application routes (e.g., dashboard)
+│   ├── api/              # API routes
+│   ├── components/       # Shared UI components
+│   ├── interview/        # Interview-related pages
+│   └── ...
+├── components/           # Additional UI components
+├── context/              # React context providers
+├── hooks/                # Custom React hooks
+├── lib/                  # Utility functions
+├── public/               # Static assets
+├── services/             # Services for interacting with external APIs (Supabase, OpenAI)
+└── ...
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## API Endpoints
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The application uses API routes to handle server-side logic.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+*   `POST /api/ai-model`: Generates interview questions based on the provided job details.
+    *   **Request Body:** `{ "jobPosition": "string", "jobDescription": "string", "duration": "string", "type": "string" }`
+    *   **Response:** `{ "status": 200, "message": { "role": "assistant", "content": "..." } }`
+*   `POST /api/ai-feedback`: Analyzes the interview conversation and provides feedback.
+    *   **Request Body:** `{ "conversation": "string" }`
+    *   **Response:** `{ "status": 200, "message": { "role": "assistant", "content": "..." } }`
 
-## Learn More
+## Environment Variables
 
-To learn more about Next.js, take a look at the following resources:
+The following environment variables are required to run the application. Create a `.env.local` file in the root of the project and add the following variables:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+*   `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL.
+*   `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase project anonymous key.
+*   `OPENAI_API_KEY`: Your OpenAI API key.
+*   `NEXT_PUBLIC_VAPI_PUBLIC_KEY`: Your Vapi AI public key.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See the `.env.example` file for a template.

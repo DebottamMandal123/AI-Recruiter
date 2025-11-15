@@ -1,7 +1,7 @@
 "use client"
 import { Button } from '@/components/ui/button';
 import { useInterview } from '@/services/Interview'
-import { Mic, PhoneOff, Timer } from 'lucide-react';
+import { Mic, MicOff, PhoneOff, Timer } from 'lucide-react';
 import Image from 'next/image';
 import React, { useEffect, useRef, useState } from 'react'
 import Vapi from "@vapi-ai/web";
@@ -25,6 +25,7 @@ const StartInterview: React.FC = () => {
   const [activeUser, setActiveUser] = useState(false);
   const [interviewActive, setInterviewActive] = useState(true);
   const [conversation, setConversation] = useState();
+  const [isMuted, setIsMuted] = useState(true);
   const { interview_id } = useParams();
   const router = useRouter();
   const vapi = useRef<Vapi | null>(null);
@@ -40,10 +41,44 @@ const StartInterview: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[interviewInfo])
 
-  const startInterview = () => {
+  const ensureMicPermission = async () => {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      toast("Microphone access is not supported in this browser.");
+      return false;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop());
+      return true;
+    } catch (error) {
+      console.error("Microphone permission denied:", error);
+      toast("Please allow microphone access to continue the interview.");
+      return false;
+    }
+  };
+
+  const unmuteUser = () => {
+    if (!vapi.current) return;
+    vapi.current.setMuted(false);
+    setIsMuted(false);
+  };
+
+  const toggleMic = () => {
+    if (!vapi.current) return;
+    const nextMuteState = !vapi.current.isMuted();
+    vapi.current.setMuted(nextMuteState);
+    setIsMuted(nextMuteState);
+  };
+
+  const startInterview = async () => {
     if (!vapi.current) {
       return
     };
+
+    const hasPermission = await ensureMicPermission();
+    if (!hasPermission) {
+      return;
+    }
     
     let questionList: string = "";
     if (interviewInfo) {
@@ -75,11 +110,13 @@ const StartInterview: React.FC = () => {
     };
 
     try {
-      vapi.current.start(assistantOptions);
+      await vapi.current.start(assistantOptions);
+      unmuteUser();
 
       vapi.current.on("call-start", () => {
         console.log("Call has started.");
         toast("Call Started ...")
+        unmuteUser();
       });      
 
       vapi.current.on("speech-start", () => {
@@ -96,6 +133,7 @@ const StartInterview: React.FC = () => {
         console.log("Call has ended.");
         setActiveUser(false)
         setInterviewActive(false)
+        setIsMuted(true)
         generateFeedback();
         router.replace('/interview/' + interview_id + '/completed')
       });
@@ -136,6 +174,7 @@ const StartInterview: React.FC = () => {
     }
     setActiveUser(false)
     setInterviewActive(false)
+    setIsMuted(true)
     router.replace('/interview/' + interview_id + '/completed')
   }
 
@@ -178,8 +217,10 @@ const StartInterview: React.FC = () => {
       <div className='flex justify-center mt-8 gap-4'>
         <Button 
           variant="outline" 
+          onClick={toggleMic}
+          aria-pressed={!isMuted}
           className="rounded-full p-3 text-white h-auto w-auto bg-gray-800 border-gray-600 hover:bg-gray-700 active:bg-gray-600 hover:text-white">
-          <Mic size={20} />
+          {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
         </Button>
         <AlertConfirmation handleStopInterview={() => stopInterview()} >
           <Button 

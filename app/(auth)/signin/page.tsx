@@ -1,8 +1,24 @@
+"use client"
 import GoogleSignin from '@/app/components/GoogleSignin'
+import { supabase } from '@/services/supabaseClient';
 import Image from 'next/image'
-import React from 'react'
+import { useRouter } from 'next/navigation';
+import React, { useEffect } from 'react'
 
-const login: React.FC = () => {
+const Login: React.FC = () => {
+  const router = useRouter();
+
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') {
+        router.push('/dashboard');
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [router]);
 
   return (
     <div className='flex flex-col items-center justify-center h-screen'>

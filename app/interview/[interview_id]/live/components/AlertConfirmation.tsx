@@ -21,7 +21,7 @@ const AlertConfirmation: React.FC<AlertConfirmationProps> = ({ children, handleS
   return (
     <div>
       <AlertDialog>
-        <AlertDialogTrigger>{children}</AlertDialogTrigger>
+        <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
         <AlertDialogContent>
             <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>

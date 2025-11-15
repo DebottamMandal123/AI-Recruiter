@@ -57,6 +57,10 @@ const StartInterview: React.FC = () => {
         provider: "deepgram" as const,
         model: "nova-2",
         language: "en-US" as const,
+        smart_format: true,
+        interim_results: true,
+        endpointing: 800,
+        multichannel: true,
       },
       voice: {
         provider: "playht" as const,
@@ -80,7 +84,11 @@ const StartInterview: React.FC = () => {
       vapi.current.on("call-start", () => {
         console.log("Call has started.");
         toast("Call Started ...")
-      });      
+      });
+
+      vapi.current.on("volume-level", (volume) => {
+        console.log(`Assistant volume level: ${volume}`);
+      });
 
       vapi.current.on("speech-start", () => {
         console.log("Assistant speech has started.");

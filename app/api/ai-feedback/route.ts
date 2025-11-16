@@ -1,21 +1,40 @@
 import { FEEDBACK_PROMPT } from "@/services/Prompts";
 import { NextRequest, NextResponse } from "next/server";
 import { createGeminiClient } from "@/lib/genaiClient";
+import { parseGeminiPayload, stripCodeFence } from "@/lib/genaiResponse";
 
 export const POST = async (req: NextRequest) => {
     try {
-        const { conversation } = await req.json();
+        let requestBody: Record<string, unknown> | undefined;
+
+        try {
+            requestBody = await req.json();
+        } catch (error) {
+            console.warn("Feedback request body parse failed", error);
+        }
+
+        const { conversation } = requestBody ?? {};
+
+        if (!conversation) {
+            return NextResponse.json(
+                { error: "Missing conversation payload" },
+                { status: 400 },
+            );
+        }
         const FINAL_PROMPT = FEEDBACK_PROMPT.replace("{{conversation}}", JSON.stringify(conversation));
 
         const genAI = createGeminiClient();
-        // Use an available Gemini model. "gemini-2.5-flash" is commonly available.
         const response = await genAI.models.generateContent({
             model: "gemini-2.5-flash",
             contents: FINAL_PROMPT,
         });
 
+        const cleanedText = stripCodeFence(response.text ?? "");
+        const payload = cleanedText ? parseGeminiPayload(cleanedText) : null;
+
         return NextResponse.json({
-            text: response.text ?? "",
+            text: cleanedText,
+            payload,
             candidates: response.candidates,
         });
     } catch (error) {

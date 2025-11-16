@@ -147,12 +147,27 @@ const StartInterview: React.FC = () => {
     }
   }
 
+  const parseFeedbackPayload = (value?: string) => {
+    if (!value) return null;
+
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      console.warn("Unable to parse feedback payload", { value, error });
+      return null;
+    }
+  };
+
   const generateFeedback = async () => {
+    if (!conversation) {
+      console.warn("Skipping feedback generation because no conversation data was captured.");
+      return;
+    }
     const response = await axios.post('/api/ai-feedback', {
       conversation: conversation
     })
-    const CONTENT = response?.data?.message?.content
-    console.log(CONTENT)
+    const safePayload = response?.data?.payload ?? parseFeedbackPayload(response?.data?.text);
+    console.log("feedback payload", safePayload)
     const { data } = await supabase
     .from('Interview-Feedback')
     .insert([
@@ -160,7 +175,7 @@ const StartInterview: React.FC = () => {
         userName: interviewInfo?.userName, 
         userEmail: interviewInfo?.userEmail,
         interview_id: interview_id,
-        feedback: JSON.parse(CONTENT),
+        feedback: safePayload ?? { rawText: response?.data?.text ?? "No feedback" },
         recommended: false
       },
     ])

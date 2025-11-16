@@ -1,17 +1,7 @@
 import { QUESTIONS_PROMPT } from "@/services/Prompts";
 import { NextRequest, NextResponse } from "next/server";
 import { createGeminiClient } from "@/lib/genaiClient";
-
-const stripCodeFence = (value: string) => value.replace(/```(?:json)?/gi, "").trim();
-
-const parsePayload = (value: string) => {
-    try {
-        return JSON.parse(value);
-    } catch (error) {
-        console.warn("Unable to parse Gemini payload", { value, error });
-        return null;
-    }
-};
+import { parseGeminiPayload, stripCodeFence } from "@/lib/genaiResponse";
 
 export const POST = async (req: NextRequest) => {
     try {
@@ -30,7 +20,7 @@ export const POST = async (req: NextRequest) => {
         });
 
         const cleanedText = stripCodeFence(response.text ?? "");
-        const payload = cleanedText ? parsePayload(cleanedText) : null;
+        const payload = cleanedText ? parseGeminiPayload(cleanedText) : null;
 
         return NextResponse.json({
             text: cleanedText,

@@ -7,7 +7,12 @@ const normalizePayload = (value?: string) => {
     return trimmed;
 };
 
-export const stripCodeFence = (value: string) => value.replace(/```(?:json)?/gi, "").trim();
+export const stripCodeFence = (value: string): string => {
+    if (!value || typeof value !== 'string') {
+        return "";
+    }
+    return value.replace(/```(?:json)?/gi, "").trim();
+};
 
 export const parseGeminiPayload = (value?: string) => {
     const normalized = normalizePayload(value);

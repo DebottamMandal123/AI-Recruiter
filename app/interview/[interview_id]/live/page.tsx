@@ -79,7 +79,7 @@ const StartInterview: React.FC = () => {
     if (!hasPermission) {
       return;
     }
-    
+
     let questionList: string = "";
     if (interviewInfo) {
       questionList = interviewInfo.questionList.map(item => item?.question).join(', ');
@@ -117,7 +117,7 @@ const StartInterview: React.FC = () => {
         console.log("Call has started.");
         toast("Call Started ...")
         unmuteUser();
-      });      
+      });
 
       vapi.current.on("speech-start", () => {
         console.log("Assistant speech has started.");
@@ -127,7 +127,7 @@ const StartInterview: React.FC = () => {
       vapi.current.on("speech-end", () => {
         console.log("Assistant speech has ended.");
         setActiveUser(true)
-      });      
+      });
 
       vapi.current.on("call-end", () => {
         console.log("Call has ended.");
@@ -150,29 +150,95 @@ const StartInterview: React.FC = () => {
   const generateFeedback = async () => {
     if (!conversation) {
       console.warn("Skipping feedback generation because no conversation data was captured.");
+      // Still create a record with a default message
+      try {
+        const { data } = await supabase
+          .from('Interview-Feedback')
+          .insert([
+            {
+              userName: interviewInfo?.userName,
+              userEmail: interviewInfo?.userEmail,
+              interview_id: interview_id,
+              feedback: { rawText: "No feedback - no conversation data available" },
+              recommended: false
+            },
+          ])
+          .select()
+        console.log("Created default feedback record:", data);
+      } catch (error) {
+        console.error("Error creating default feedback record:", error);
+      }
       return;
     }
-    const response = await axios.post('/api/ai-feedback', {
-      conversation: conversation
-    })
-    const safePayload = response?.data?.payload;
-    if (!safePayload) {
-      console.warn("Feedback API returned no payload", response?.data);
+
+    try {
+      const response = await axios.post('/api/ai-feedback', {
+        conversation: conversation
+      });
+
+      if (!response || !response.data) {
+        console.warn("Feedback API returned no data");
+        // Create a record with available data or default message
+        const { data } = await supabase
+          .from('Interview-Feedback')
+          .insert([
+            {
+              userName: interviewInfo?.userName,
+              userEmail: interviewInfo?.userEmail,
+              interview_id: interview_id,
+              feedback: { rawText: "No feedback - API returned no data" },
+              recommended: false
+            },
+          ])
+          .select()
+        console.log("Created fallback feedback record:", data);
+        return;
+      }
+
+      const safePayload = response?.data?.payload;
+      if (!safePayload) {
+        console.warn("Feedback API returned no payload", response?.data);
+      }
+      console.log("feedback payload", safePayload);
+
+      const { data } = await supabase
+        .from('Interview-Feedback')
+        .insert([
+          {
+            userName: interviewInfo?.userName,
+            userEmail: interviewInfo?.userEmail,
+            interview_id: interview_id,
+            feedback: safePayload ?? { rawText: response?.data?.text ?? "No feedback" },
+            recommended: false
+          },
+        ])
+        .select();
+
+      console.log("Feedback saved:", data);
+    } catch (error) {
+      console.error("Error generating or saving feedback:", error);
+      // Even if feedback generation fails, save a record with error information
+      try {
+        const { data } = await supabase
+          .from('Interview-Feedback')
+          .insert([
+            {
+              userName: interviewInfo?.userName,
+              userEmail: interviewInfo?.userEmail,
+              interview_id: interview_id,
+              feedback: {
+                rawText: "Error generating feedback",
+                error: error instanceof Error ? error.message : String(error)
+              },
+              recommended: false
+            },
+          ])
+          .select();
+        console.log("Created error feedback record:", data);
+      } catch (dbError) {
+        console.error("Error saving fallback feedback:", dbError);
+      }
     }
-    console.log("feedback payload", safePayload)
-    const { data } = await supabase
-    .from('Interview-Feedback')
-    .insert([
-      { 
-        userName: interviewInfo?.userName, 
-        userEmail: interviewInfo?.userEmail,
-        interview_id: interview_id,
-        feedback: safePayload ?? { rawText: response?.data?.text ?? "No feedback" },
-        recommended: false
-      },
-    ])
-    .select()
-    console.log(data);
   }
 
   const stopInterview = () => {
@@ -193,7 +259,7 @@ const StartInterview: React.FC = () => {
           00:00:00
         </span>
       </h2>
-      
+
       <div className='grid grid-cols-1 md:grid-cols-2 gap-8 mt-4'>
         <div className='bg-slate-900 h-[350px] rounded-lg border flex items-center justify-center relative'>
           <div className='relative'>
@@ -222,16 +288,16 @@ const StartInterview: React.FC = () => {
         </div>
       </div>
       <div className='flex justify-center mt-8 gap-4'>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={toggleMic}
           aria-pressed={!isMuted}
           className="rounded-full p-3 text-white h-auto w-auto bg-gray-800 border-gray-600 hover:bg-gray-700 active:bg-gray-600 hover:text-white">
           {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
         </Button>
         <AlertConfirmation handleStopInterview={() => stopInterview()} >
-          <Button 
-            variant="destructive" 
+          <Button
+            variant="destructive"
             className="rounded-full p-3 h-auto w-auto active:bg-red-500">
             <PhoneOff size={20} />
           </Button>

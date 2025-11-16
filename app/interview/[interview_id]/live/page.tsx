@@ -147,17 +147,6 @@ const StartInterview: React.FC = () => {
     }
   }
 
-  const parseFeedbackPayload = (value?: string) => {
-    if (!value) return null;
-
-    try {
-      return JSON.parse(value);
-    } catch (error) {
-      console.warn("Unable to parse feedback payload", { value, error });
-      return null;
-    }
-  };
-
   const generateFeedback = async () => {
     if (!conversation) {
       console.warn("Skipping feedback generation because no conversation data was captured.");
@@ -166,7 +155,10 @@ const StartInterview: React.FC = () => {
     const response = await axios.post('/api/ai-feedback', {
       conversation: conversation
     })
-    const safePayload = response?.data?.payload ?? parseFeedbackPayload(response?.data?.text);
+    const safePayload = response?.data?.payload;
+    if (!safePayload) {
+      console.warn("Feedback API returned no payload", response?.data);
+    }
     console.log("feedback payload", safePayload)
     const { data } = await supabase
     .from('Interview-Feedback')

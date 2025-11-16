@@ -1,7 +1,14 @@
+"use client"
 import React from 'react'
 import { CheckCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 
 const CompleteInterview = () => {
+  const router = useRouter()
+  const { interview_id } = useParams()
+
   return (
     <div className="w-full h-full flex justify-center items-center pt-16 pb-8">
       <div className="flex flex-col max-w-md w-full">
@@ -18,6 +25,10 @@ const CompleteInterview = () => {
             Thank you for participating in the interview process.
             We have successfully received your responses.
           </p>
+
+          <div className="flex justify-center mb-4">
+            <Button onClick={() => router.push(`/scheduled-interview/${interview_id}/details`)}>View Feedback</Button>
+          </div>
           
           <div className="bg-blue-50 rounded-lg p-3 mb-3">
             <div className="text-blue-800 font-medium text-center text-sm">

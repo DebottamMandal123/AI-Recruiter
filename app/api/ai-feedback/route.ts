@@ -32,6 +32,9 @@ export const POST = async (req: NextRequest) => {
         const cleanedText = stripCodeFence(response.text ?? "");
         const payload = cleanedText ? parseGeminiPayload(cleanedText) : null;
 
+        console.log("Cleaned text from Gemini:", cleanedText);
+        console.log("Parsed payload:", payload);
+
         return NextResponse.json({
             text: cleanedText,
             payload,

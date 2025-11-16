@@ -16,8 +16,20 @@ export const parseGeminiPayload = (value?: string) => {
     }
 
     try {
+        // Attempt to parse the cleaned string
         return JSON.parse(normalized);
     } catch (error) {
+        // If parsing fails, try to extract JSON from the string
+        const jsonRegex = /\{(?:[^{}]|\[(?:[^\[\]]|{[^{}]*})*\])*\}|\[(?:[^\[\]]|{[^{}]*})*\]/;
+        const match = normalized.match(jsonRegex);
+        if (match) {
+            try {
+                return JSON.parse(match[0]);
+            } catch (e) {
+                console.warn("Unable to parse extracted Gemini payload", { value: match[0], error: e });
+                return null;
+            }
+        }
         console.warn("Unable to parse Gemini payload", { value: normalized, error });
         return null;
     }

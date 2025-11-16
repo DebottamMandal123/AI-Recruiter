@@ -33,15 +33,25 @@ const GenerateQuestions: React.FC<GenerateQuestionsProps> = ({ formData, onCreat
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData])    
 
-  const GenerateQuestionList = async () => {
+    const parseBackendPayload = (value?: string) => {
+      if (!value) return null;
+
+      try {
+        return JSON.parse(value);
+      } catch (error) {
+        console.warn("Unable to parse AI payload", { value, error });
+        return null;
+      }
+    };
+
+    const GenerateQuestionList = async () => {
     setLoading(true)
     try {
       const response = await axios.post("/api/ai-model", {
         ...formData
       })
-      console.log(response.data.message.content);
-      const CONTENT = JSON.parse(response.data.message.content);
-      setQuestionsList(CONTENT?.interviewQuestions)
+      const safePayload = response.data?.payload ?? parseBackendPayload(response.data?.text);
+      setQuestionsList(safePayload?.interviewQuestions ?? []);
       setLoading(false)
     }
     catch(error) {

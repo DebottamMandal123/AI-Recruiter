@@ -1,41 +1,50 @@
 import { QUESTIONS_PROMPT } from "@/services/Prompts";
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai"
+import { createGeminiClient } from "@/lib/genaiClient";
+
+const stripCodeFence = (value: string) => value.replace(/```(?:json)?/gi, "").trim();
+
+const parsePayload = (value: string) => {
+    try {
+        return JSON.parse(value);
+    } catch (error) {
+        console.warn("Unable to parse Gemini payload", { value, error });
+        return null;
+    }
+};
 
 export const POST = async (req: NextRequest) => {
-
-    const { jobPosition, jobDescription, duration, type  } = await req.json();
-
-    const FINAL_PROMPT = QUESTIONS_PROMPT
-        .replace('{{jobTitle}}', jobPosition)
-        .replace('{{jobDescription}}', jobDescription)
-        .replace('{{duration}}', duration)
-        .replace('{{type}}', type)
-
-    console.log(FINAL_PROMPT);
-
     try {
-        const openai = new OpenAI({
-            apiKey: process.env.OPENAI_API_KEY,
+        const { jobPosition, jobDescription, duration, type } = await req.json();
+
+        const FINAL_PROMPT = QUESTIONS_PROMPT
+            .replace("{{jobTitle}}", jobPosition)
+            .replace("{{jobDescription}}", jobDescription)
+            .replace("{{duration}}", duration)
+            .replace("{{type}}", type);
+
+        const genAI = createGeminiClient();
+        const response = await genAI.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: FINAL_PROMPT,
         });
 
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4.1",
-            messages: [
-                {
-                    role: "user",
-                    content: FINAL_PROMPT
-                }
-            ]
-        })
-        console.log(completion.choices[0].message);
+        const cleanedText = stripCodeFence(response.text ?? "");
+        const payload = cleanedText ? parsePayload(cleanedText) : null;
+
         return NextResponse.json({
-            status: 200,
-            message: completion.choices[0].message
-        })
+            text: cleanedText,
+            payload,
+            candidates: response.candidates,
+        });
+    } catch (error) {
+        console.error("Error generating questions list", error);
+
+        return NextResponse.json(
+            {
+                error: error instanceof Error ? error.message : "Unknown error",
+            },
+            { status: 500 },
+        );
     }
-    catch(error) {
-        console.log("Error generating questions list ", error)
-        return NextResponse.json(error)
-    }
-}
+};

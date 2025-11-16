@@ -1,33 +1,31 @@
 import { FEEDBACK_PROMPT } from "@/services/Prompts";
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import { createGeminiClient } from "@/lib/genaiClient";
 
 export const POST = async (req: NextRequest) => {
-    const { conversation } = await req.json();
-    const FINAL_PROMPT = FEEDBACK_PROMPT.replace('{{conversation}}', JSON.stringify(conversation))
-
     try {
-        const openai = new OpenAI({
-            apiKey: process.env.OPENAI_API_KEY,
+        const { conversation } = await req.json();
+        const FINAL_PROMPT = FEEDBACK_PROMPT.replace("{{conversation}}", JSON.stringify(conversation));
+
+        const genAI = createGeminiClient();
+        // Use an available Gemini model. "gemini-2.5-flash" is commonly available.
+        const response = await genAI.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: FINAL_PROMPT,
         });
 
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4.1",
-            messages: [
-                {
-                    role: "user",
-                    content: FINAL_PROMPT
-                }
-            ]
-        })
-        console.log(completion.choices[0].message);
         return NextResponse.json({
-            status: 200,
-            message: completion.choices[0].message
-        })
+            text: response.text ?? "",
+            candidates: response.candidates,
+        });
+    } catch (error) {
+        console.error("Error generating feedback", error);
+
+        return NextResponse.json(
+            {
+                error: error instanceof Error ? error.message : "Unknown error",
+            },
+            { status: 500 },
+        );
     }
-    catch(error) {
-        console.log("Error generating questions list ", error)
-        return NextResponse.json(error)
-    }
-}
+};

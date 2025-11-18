@@ -1,59 +1,41 @@
 import { QUESTIONS_PROMPT } from "@/services/Prompts";
 import { NextRequest, NextResponse } from "next/server";
-import { createGeminiClient } from "@/lib/genaiClient";
-import { parseGeminiPayload, stripCodeFence } from "@/lib/genaiResponse";
+import OpenAI from "openai"
 
 export const POST = async (req: NextRequest) => {
+
+    const { jobPosition, jobDescription, duration, type  } = await req.json();
+
+    const FINAL_PROMPT = QUESTIONS_PROMPT
+        .replace('{{jobTitle}}', jobPosition)
+        .replace('{{jobDescription}}', jobDescription)
+        .replace('{{duration}}', duration)
+        .replace('{{type}}', type)
+
+    console.log(FINAL_PROMPT);
+
     try {
-        const { jobPosition, jobDescription, duration, type } = await req.json();
-
-        if (!jobPosition || !jobDescription || !duration || !type) {
-            console.warn("Missing required fields for question generation", { jobPosition, jobDescription, duration, type });
-            return NextResponse.json(
-                { error: "Missing required fields: jobPosition, jobDescription, duration, type" },
-                { status: 400 },
-            );
-        }
-
-        const FINAL_PROMPT = QUESTIONS_PROMPT
-            .replace("{{jobTitle}}", jobPosition)
-            .replace("{{jobDescription}}", jobDescription)
-            .replace("{{duration}}", duration)
-            .replace("{{type}}", type);
-
-        const genAI = createGeminiClient();
-        const response = await genAI.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: FINAL_PROMPT,
+        const openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
         });
 
-        if (!response || !response.text) {
-            console.warn("Gemini API returned no text response for questions");
-            return NextResponse.json({
-                text: "",
-                payload: null,
-                candidates: response?.candidates || [],
-            });
-        }
-
-        const cleanedText = stripCodeFence(response.text);
-        const payload = cleanedText ? parseGeminiPayload(cleanedText) : null;
-
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4.1",
+            messages: [
+                {
+                    role: "user",
+                    content: FINAL_PROMPT
+                }
+            ]
+        })
+        console.log(completion.choices[0].message);
         return NextResponse.json({
-            text: cleanedText || "",
-            payload: payload || null,
-            candidates: response.candidates,
-        });
-    } catch (error) {
-        console.error("Error generating questions list", error);
-
-        return NextResponse.json(
-            {
-                error: error instanceof Error ? error.message : "Unknown error",
-                text: "",
-                payload: null
-            },
-            { status: 500 },
-        );
+            status: 200,
+            message: completion.choices[0].message
+        })
     }
-};
+    catch(error) {
+        console.log("Error generating questions list ", error)
+        return NextResponse.json(error)
+    }
+}
